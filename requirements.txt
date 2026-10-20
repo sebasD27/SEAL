@@ -1,0 +1,8 @@
+# The GUI itself (mesh_gui.py) needs only the Python standard library.
+# The mesh scripts need pyCAPS, which comes with Engineering Sketch Pad (ESP),
+# not pip. These packages are for the airfoil and post-processing scripts:
+numpy
+scipy
+matplotlib
+pint
+vtk

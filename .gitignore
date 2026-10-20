@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+
+# GUI logs and personal settings (machine-specific paths)
+*.log
+mesh_gui_config.json
+*.bak
+
+# Generated mesh / CFD output (large; regenerate by running the GUI)
+*/Scratch/
+supersonic_drone/
+*.su2
+*.ugrid
+*.vtu
+*.eto
+*.plot
+restart_flow.dat
+history.csv
