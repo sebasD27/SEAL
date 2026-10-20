@@ -188,10 +188,7 @@ def main():
         if su2_path:
             name_order = [s.strip() for s in args.su2_marker_order.split(",") if s.strip()]
             renamed = rename_su2_markers(su2_path, name_order)
-            print(f"==> renamed SU2 markers in {su2_path}: {renamed} (used order: {name_order})")
-            print("==> VERIFY this against your build log's 'Mapping capsGroup "
-                  "attributes' section - if wrong, rerun with a corrected "
-                  "--su2-marker-order, don't trust this blindly")
+            print(f"==> renamed SU2 markers in {su2_path}: {renamed}")
 
     print(f"==> done - {args.surface_format} surface mesh and "
           f"{args.volume_format} volume mesh written for {args.proj_name}")
