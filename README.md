@@ -1,6 +1,12 @@
-# SEAL
+<p align="center">
+  <img src="assets/seal_logo.png" alt="SEAL logo" width="300">
+</p>
 
-A program that links SU2, Engineering Sketch Pad (ESP), and AFLR. A Tkinter GUI sets up the ESP environment, generates an AFLR mesh from a `.csm` geometry with pyCAPS, and optionally runs SU2 (including angle-of-attack / Mach sweeps) with a live convergence plot.
+<h1 align="center">SEAL</h1>
+
+<p align="center"><b>S</b>U2 · <b>E</b>SP · <b>A</b>FLR · <b>L</b>inkage</p>
+
+SEAL links SU2, Engineering Sketch Pad (ESP), and AFLR. A Tkinter GUI sets up the ESP environment, generates an AFLR mesh from a `.csm` geometry with pyCAPS, and optionally runs SU2 (including angle-of-attack / Mach sweeps) with a live convergence plot.
 
 ## Requirements
 
@@ -80,3 +86,7 @@ or `python mesh_gui.py`. In the GUI, set the paths to your ESP install, ESP's `p
 | `check_separation.py`, `vortex_slices.py` | Post-processing of SU2 `.vtu` output |
 | `polhamus.py` | Polhamus leading-edge suction analogy estimates |
 | `ONERA_D_selig.dat` | Sample airfoil coordinates |
+
+## AI disclosure
+
+Parts of this project were developed with the help of AI tools, including Claude (Anthropic) through Claude Code. AI assistance was used to write and edit code and documentation, including this README, `.gitignore` and `requirements.txt`. All AI-assisted work was reviewed by the author, who is responsible for the project's content. Mesh and CFD results should be checked independently before they are relied on.
