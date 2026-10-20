@@ -185,7 +185,7 @@ def main():
         except FileNotFoundError as e:
             print(f"==> could not locate the SU2 mesh file: {e}")
 
-        if su2_path and args.su2_marker_order.strip():
+        if su2_path:
             name_order = [s.strip() for s in args.su2_marker_order.split(",") if s.strip()]
             renamed = rename_su2_markers(su2_path, name_order)
             print(f"==> renamed SU2 markers in {su2_path}: {renamed} (used order: {name_order})")

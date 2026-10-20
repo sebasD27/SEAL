@@ -52,37 +52,84 @@ def _find_su2_file(analysis_obj, proj_name):
         f"directory by hand and rename markers there manually if needed")
 
 
+def read_mapbc_names(su2_path):
+    """
+    AFLR3 writes <proj>.mapbc next to the .su2 file: a count line, then
+    one "index bcType capsGroup" line per group, in the exact numbering
+    CAPS used for BC_N. Returns {index: name}, or {} if there is no
+    readable .mapbc.
+    """
+    mapbc_path = os.path.splitext(su2_path)[0] + ".mapbc"
+    names = {}
+    try:
+        with open(mapbc_path) as f:
+            for line in f.readlines()[1:]:
+                parts = line.split()
+                if len(parts) >= 3 and parts[0].isdigit():
+                    names[int(parts[0])] = parts[2]
+    except OSError:
+        pass
+    return names
+
+
 def rename_su2_markers(su2_path, name_order):
     """
     AFLR3's SU2 writer names markers generically ("BC_1", "BC_2", ...)
-    rather than using the real capsGroup names. Rename them using
-    name_order[N-1] (1-indexed, matching CAPS's own numbering).
+    rather than using the real capsGroup names. Rename BC_N using the
+    .mapbc file AFLR3 writes alongside the mesh (authoritative, covers
+    every capsGroup); if there is none, fall back to name_order[N-1]
+    (1-indexed, matching CAPS's own numbering - check your build log's
+    "Mapping capsGroup attributes" section).
 
-    IMPORTANT: name_order must match the order CAPS actually assigned -
-    check your build log's "Mapping capsGroup attributes" section
-    (Name = X, index = N) to confirm/correct this before trusting the
-    result. Any BC_N with no corresponding entry in name_order (e.g.
-    an internal SEND_RECV marker used for MPI partitioning) is left
-    unchanged rather than raising.
+    AFLR3 also writes a group's triangles and quads (e.g. boundary-layer
+    quads on the symmetry plane) as two separate BC_N markers with the
+    same N. Markers that end up with the same name are merged into one,
+    so SU2 sees each boundary exactly once.
+
+    Any BC_N with no name (e.g. an internal SEND_RECV marker used for
+    MPI partitioning) is left unchanged rather than raising.
     """
-    with open(su2_path) as f:
-        original = f.readlines()
+    names = read_mapbc_names(su2_path)
+    source = "mapbc"
+    if not names:
+        names = {i+1: n for i, n in enumerate(name_order)}
+        source = "--su2-marker-order"
 
-    out = []
+    with open(su2_path) as f:
+        lines = f.readlines()
+
+    i_nmark = next(i for i, l in enumerate(lines) if l.strip().startswith("NMARK"))
+    nmark = int(lines[i_nmark].split("=")[1])
+
+    markers = {}   # name -> element lines, in first-seen order
     renamed = []
-    for line in original:
-        m = re.match(r"^(MARKER_TAG\s*=\s*)BC_(\d+)\s*$", line.strip())
-        if m:
-            idx = int(m.group(2))
-            if 1 <= idx <= len(name_order):
-                out.append(f"{m.group(1)}{name_order[idx-1]}\n")
-                renamed.append((idx, name_order[idx-1]))
-                continue
-        out.append(line)
+    j = i_nmark + 1
+    for _ in range(nmark):
+        tag = lines[j].split("=", 1)[1].strip()
+        n = int(lines[j+1].split("=", 1)[1])
+        m = re.match(r"^BC_(\d+)$", tag)
+        if m and int(m.group(1)) in names:
+            name = names[int(m.group(1))]
+            if (int(m.group(1)), name) not in renamed:
+                renamed.append((int(m.group(1)), name))
+        else:
+            name = tag
+        markers.setdefault(name, []).extend(lines[j+2:j+2+n])
+        j += 2 + n
+
+    out = lines[:i_nmark]
+    out.append(f"NMARK= {len(markers)}\n")
+    for name, elems in markers.items():
+        out.append(f"MARKER_TAG= {name}\n")
+        out.append(f"MARKER_ELEMS= {len(elems)}\n")
+        out.extend(elems)
+    out.extend(lines[j:])
 
     with open(su2_path, "w") as f:
         f.writelines(out)
 
+    print(f"==> marker names taken from {source}; "
+          f"{nmark} marker(s) in, {len(markers)} out: {list(markers)}")
     return renamed
 
 
@@ -739,7 +786,7 @@ def main():
         except FileNotFoundError as e:
             print(f"==> could not locate the SU2 mesh file: {e}")
 
-        if su2_path and args.su2_marker_order.strip():
+        if su2_path:
             name_order = [s.strip() for s in args.su2_marker_order.split(",") if s.strip()]
             renamed = rename_su2_markers(su2_path, name_order)
             print(f"==> renamed SU2 markers in {su2_path}: {renamed} (used order: {name_order})")
